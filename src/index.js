@@ -1,17 +1,58 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+// src/index.js
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import { RecoilRoot } from "recoil";
+import { ClerkProvider } from "@clerk/clerk-react";
+import FavoritesProvider from "./firebase/FavoritesProvider";
+import { themeState, currencyState } from "./Recoil/atoms";
+import { useSetRecoilState } from "recoil";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+/**
+ * Component to initialize theme and currency from localStorage
+ */
+const InitializeSettings = ({ children }) => {
+  const setTheme = useSetRecoilState(themeState);
+  const setCurrency = useSetRecoilState(currencyState);
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+  React.useEffect(() => {
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem("theme") || "light";
+    setTheme(savedTheme);
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
+    // Load currency from localStorage
+    const savedCurrency = localStorage.getItem("currency") || "usd";
+    setCurrency(savedCurrency);
+  }, [setTheme, setCurrency]);
+
+  return children;
+};
+
+/**
+ * Root component that wraps the app with initialization components
+ */
+const Root = () => {
+  return (
+    <ClerkProvider publishableKey={process.env.REACT_APP_CLERK_FRONTEND_API}>
+      <RecoilRoot>
+        <InitializeSettings>
+          <FavoritesProvider>
+            <App />
+            <ToastContainer />
+          </FavoritesProvider>
+        </InitializeSettings>
+      </RecoilRoot>
+    </ClerkProvider>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<Root />);
